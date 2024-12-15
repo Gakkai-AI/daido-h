@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メモ帳</title>
+  <style>
+    /* 既存のスタイルシート内容 */
+    body {
+        font-family: Arial, sans-serif;
+        background-color: black;
+        margin: 0;
+        padding: 0;
+        color: white;
+      }
+      h1, h2, h3, h4, h5 {
+        font-weight: 100;
+      }
+      header {
+        padding: 10px;
+        text-align: center;
+        border-bottom: 1px solid deepskyblue;
+      }
+      main {
+        padding: 20px;
+      }
+      button {
+        margin: 5px;
+        padding: 10px;
+        font-size: 105%;
+        cursor: pointer;
+        background-color: black;
+        color: white;
+        height: 50px;
+        width: 200px;
+        border-radius: 2px;
+        border: solid 1px deepskyblue;
+      }
+      .memo-list-item {
+        border: 1px solid deepskyblue;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 2px;
+      }
+      form {
+        border: 1px solid deepskyblue;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 5px;
+      }
+      input {
+        border: 1px solid deepskyblue;
+        background-color: black;
+        color: white;
+        font-size: 105%;
+        padding: 10px;
+        margin: 5px 0;
+        width: 40%;
+        border-radius: 2px;
+      }
+      select {
+        border: 1px solid deepskyblue;
+        background-color: black;
+        color: white;
+        padding: 10px;
+        font-size: 105%;
+        margin: 5px 0;
+        border-radius: 2px;
+      }
+      option {
+        border: 1px solid deepskyblue;
+        background-color: black;
+        font-size: 105%;
+        color: white;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 2px;
+      }
+      textarea {
+        border: 1px solid deepskyblue;
+        background-color: black;
+        color: white;
+        font-size: 105%;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 2px;
+        width: 90%;
+        height: 200px;
+      }
+      .kiroku {
+        border: 1px solid magenta;
+        background-color: black;
+        color: white;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 2px;
+      }
+      .kiroku1 {
+        border: 1px solid red;
+        background-color: black;
+        color: red;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 2px;
+      }
+      button.active {
+        border: 1px solid red;
+        background: linear-gradient(to right, #750000, #ff0000);
+        color: rgb(255, 255, 255);
+      }
+      button:hover {
+        border: 1px solid rgb(0, 119, 255);
+        color: rgb(255, 255, 255);
+      }
+
+button.active:hover {
+  border: 1px solid red;
+}
+      </style>
+</head>
+<body>
+  <header>
+    <h1>プログラミング部　活動メモ</h1>
+    <button onclick="navigateTo('create')">新しいメモを作成</button>
+  </header>
+  <main id="content"></main>
+  <script>
+    const STORAGE_KEY = 'memoAppData';
+
+// メモをロード
+function loadMemos() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+}
+
+// メモを保存
+function saveMemos(memos) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
+}
+
+// 改行を<br>タグに変換する関数
+function nl2br(str) {
+    return str.replace(/\n/g, '<br>');
+  }
+    
+
+// ホーム画面の表示
+function displayHome() {
+  const memos = loadMemos();
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div>
+      <button onclick="filterMemos('all')">すべて</button>
+      <button onclick="filterMemos('html')">HTML</button>
+      <button onclick="filterMemos('css')">css</button>
+      <button onclick="filterMemos('javascript')">JavaScript</button>
+      <button onclick="filterMemos('project')">プロジェクト</button>
+      <button onclick="filterMemos('other')">その他</button>
+    </div>
+    <div id="memoList">
+      ${memos.map((memo, index) => `
+        <div class="memo-list-item" onclick="viewMemo(${index})">
+          <strong>${memo.title}</strong><br>
+          更新日: ${memo.updatedAt}<br>
+          カテゴリ: ${memo.category}
+        </div>
+      `).join('')}
+    </div>
+  `;
+  filterMemos('all');
+}
+
+// メモをカテゴリで絞り込む
+function filterMemos(category) {
+    const memos = loadMemos();
+    const filteredMemos = category === 'all'
+      ? memos.map((memo, index) => ({ ...memo, originalIndex: index }))
+      : memos
+          .map((memo, index) => ({ ...memo, originalIndex: index }))
+          .filter(m => m.category === category);
+  
+    const memoList = document.getElementById('memoList');
+    memoList.innerHTML = filteredMemos.map((memo) => `
+      <div class="memo-list-item" onclick="viewMemo(${memo.originalIndex})">
+        <strong>${memo.title}</strong><br>
+        更新日: ${memo.updatedAt}<br>
+        カテゴリ: ${memo.category}
+      </div>
+    `).join('');
+  
+    // カテゴリボタンの背景色を更新
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(button => {
+      button.classList.remove('active');
+    });
+  
+    const activeButton = document.querySelector(`button[onclick="filterMemos('${category}')"]`);
+    if (activeButton) {
+      activeButton.classList.add('active');
+    }
+  }
+  
+
+
+// メモ詳細を表示
+function viewMemo(index) {
+  const memos = loadMemos();
+  const memo = memos[index];
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <h2>${memo.title}</h2>
+    <p>更新日: ${memo.updatedAt}</p>
+    <p>カテゴリ: ${memo.category}</p>
+    <p>${nl2br(memo.content)}</p>
+    <button onclick="navigateTo('home')">戻る</button>
+    <button onclick="navigateTo('edit', ${index})">編集</button>
+    <button onclick="deleteMemo(${index})" class="kiroku1">削除</button>
+  `;
+}
+
+
+
+// 新しいメモを作成する画面
+function displayCreate() {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <h2>新しいメモを作成</h2>
+    <form onsubmit="createMemo(event)">
+      <label for="category">カテゴリ:</label>
+      <select id="category">
+        <option value="html">HTML</option>
+        <option value="css">css</option>
+        <option value="javascript">JavaScript</option>
+        <option value="project">プロジェクト</option>
+        <option value="other">その他</option>
+      </select><br><br>
+      <label for="title">題名:</label>
+      <input type="text" id="title" required><br><br>
+      <label for="content">内容:</label>
+      <textarea id="contentField" required></textarea><br><br>
+      <button type="submit">登録</button>
+      <button type="button" onclick="navigateTo('home')">キャンセル</button>
+    </form>
+  `;
+}
+
+// メモを保存
+function createMemo(event) {
+  event.preventDefault();
+  const category = document.getElementById('category').value;
+  const title = document.getElementById('title').value;
+  const content = document.getElementById('contentField').value;
+  const memos = loadMemos();
+  memos.push({
+    title,
+    content,
+    category,
+    updatedAt: new Date().toLocaleString(),
+  });
+  saveMemos(memos);
+  navigateTo('home');
+}
+
+// メモを編集する画面
+function displayEdit(index) {
+    const memos = loadMemos();
+    const memo = memos[index];
+    const content = document.getElementById('content');
+    content.innerHTML = `
+      <h2>メモを編集</h2>
+      <form onsubmit="updateMemo(event, ${index})">
+        <label for="editCategory">カテゴリ:</label>
+        <select id="editCategory">
+          <option value="html" ${memo.category === 'html' ? 'selected' : ''}>HTML</option>
+          <option value="css" ${memo.category === 'css' ? 'selected' : ''}>css</option>
+          <option value="javascript" ${memo.category === 'javascript' ? 'selected' : ''}>JavaScript</option>
+          <option value="project" ${memo.category === 'project' ? 'selected' : ''}>プロジェクト</option>
+          <option value="other" ${memo.category === 'other' ? 'selected' : ''}>その他</option>
+        </select><br><br>
+        <label for="editTitle">題名:</label>
+        <input type="text" id="editTitle" value="${memo.title}" required><br><br>
+        <label for="editContent">内容:</label>
+        <textarea id="editContent" required>${memo.content}</textarea><br><br>
+        <button type="submit">更新</button>
+        <button type="button" onclick="navigateTo('home')">キャンセル</button>
+      </form>
+    `;
+  }
+  // メモを更新
+  function updateMemo(event, index) {
+    event.preventDefault();
+    const memos = loadMemos();
+    const memo = memos[index];
+  
+    // フォームから値を取得して更新
+    memo.category = document.getElementById('editCategory').value;
+    memo.title = document.getElementById('editTitle').value;
+    memo.content = document.getElementById('editContent').value;
+    memo.updatedAt = new Date().toLocaleString();
+  
+    saveMemos(memos);
+    navigateTo('home');
+  }
+  
+
+// メモを削除
+function deleteMemo(index) {
+  const memos = loadMemos();
+  memos.splice(index, 1);
+  saveMemos(memos);
+  navigateTo('home');
+}
+
+// ページ切り替え
+function navigateTo(page, index = null) {
+  if (page === 'home') displayHome();
+  if (page === 'create') displayCreate();
+  if (page === 'edit') displayEdit(index);
+}
+
+// 初期化
+window.onload = () => navigateTo('home');
+
+  </script>
+</body>
+</html>
